@@ -54,15 +54,27 @@ const server = http.createServer((req, res) => {
 // Extract latest news from HTML
 function extractLatestNews(html) {
   const latestStories = [];
-  const pattern = /<li class="latest-stories__item">[\s\S]*?<a href="([^"]+)">[\s\S]*?<h3 class="latest-stories__item-headline">([\s\S]*?)<\/h3>/g;
-  let match;
-
-  while ((match = pattern.exec(html)) !== null) {
-    const title = match[2].trim();
-    const link = 'https://time.com' + match[1].trim(); 
+  const startMarker = '<li class="latest-stories__item">';
+  const endMarker = '</li>';
+  
+  let startIndex = html.indexOf(startMarker);
+  
+  while (startIndex !== -1) {
+    const endIndex = html.indexOf(endMarker, startIndex);
+    const listItem = html.slice(startIndex, endIndex + endMarker.length);
+    const titleStartIndex = listItem.indexOf('<h3 class="latest-stories__item-headline">');
+    const titleEndIndex = listItem.indexOf('</h3>', titleStartIndex);
+    const linkStartIndex = listItem.indexOf('<a href="') + '<a href="'.length;
+    const linkEndIndex = listItem.indexOf('"', linkStartIndex);
+    
+    const title = listItem.slice(titleStartIndex, titleEndIndex).replace('<h3 class="latest-stories__item-headline">', '').trim();
+    const link = 'https://time.com' + listItem.slice(linkStartIndex, linkEndIndex);
+    
     latestStories.push({ title, link });
+    
+    startIndex = html.indexOf(startMarker, endIndex);
   }
-
+  
   return latestStories;
 }
 
